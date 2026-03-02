@@ -1,6 +1,18 @@
 {% block title %}Grid{% endblock %}
 
 {% block content %}
-<h1>Hello World!!!!</h1>
-<p>This will be the grid page for the site! (eventually)</p>
+<h1>Community Art Grid</h1>
+<div style="overflow: auto;">
+    <table style="border-collapse: collapse; cursor: pointer;">
+        {% for row in grid %}
+        <tr>
+            {% for pixel in row %}
+            <td style="width:4px; height:4px; background-color:{{ pixel.color }};"
+                data-x="{{ pixel.x }}" data-y="{{ pixel.y }}">
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 {% endblock %}
