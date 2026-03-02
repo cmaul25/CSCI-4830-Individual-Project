@@ -7,8 +7,8 @@
         {% for row in grid %}
         <tr>
             {% for pixel in row %}
-            <td style="width:4px; height:4px; background-color:{{ pixel.color }};"
-                data-x="{{ pixel.x }}" data-y="{{ pixel.y }}">
+            <td style="width:4px; height:4px; background-color:{{ pixel.color }}; border: 1px solid #ccc;"
+            data-x="{{ pixel.x }}" data-y="{{ pixel.y }}">
             </td>
             {% endfor %}
         </tr>
