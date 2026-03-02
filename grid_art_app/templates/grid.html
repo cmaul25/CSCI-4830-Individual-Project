@@ -1,18 +1,111 @@
 {% block title %}Grid{% endblock %}
 
 {% block content %}
-<h1>Community Art Grid</h1>
-<div style="overflow: auto;">
+
+<!-- Section 1: Signature -->
+<div style="padding: 10px; background-color: #f0f0f0; margin-bottom: 10px;">
+    <label><strong>Signature (username):</strong></label>
+    <input type="text" id="signature" placeholder="Enter your username..." style="margin-left: 10px; padding: 5px;">
+    <span id="signature-warning" style="color: red; margin-left: 10px; display: none;">Please enter a signature before editing!</span>
+</div>
+
+<!-- Section 2: Grid -->
+<div style="overflow: auto; margin-bottom: 10px;">
     <table style="border-collapse: collapse; cursor: pointer;">
         {% for row in grid %}
         <tr>
             {% for pixel in row %}
             <td style="width:4px; height:4px; background-color:{{ pixel.color }}; border: 1px solid #ccc;"
-            data-x="{{ pixel.x }}" data-y="{{ pixel.y }}">
+                data-x="{{ pixel.x }}" data-y="{{ pixel.y }}"
+                onclick="pixelClicked(this)">
             </td>
             {% endfor %}
         </tr>
         {% endfor %}
     </table>
 </div>
+
+<!-- Section 3: Color Widget -->
+<div id="color-widget" style="padding: 10px; background-color: #f0f0f0; display: none;">
+    <h3>Edit Pixel</h3>
+    <p>Selected Pixel — X: <strong id="pixel-x">-</strong>, Y: <strong id="pixel-y">-</strong></p>
+
+    <div style="margin-bottom: 8px;">
+        <label>R: <span id="r-value">128</span></label><br>
+        <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updatePreview()">
+    </div>
+    <div style="margin-bottom: 8px;">
+        <label>G: <span id="g-value">128</span></label><br>
+        <input type="range" id="g-slider" min="0" max="255" value="128" oninput="updatePreview()">
+    </div>
+    <div style="margin-bottom: 8px;">
+        <label>B: <span id="b-value">128</span></label><br>
+        <input type="range" id="b-slider" min="0" max="255" value="128" oninput="updatePreview()">
+    </div>
+
+    <div style="margin-bottom: 8px;">
+        <strong>Preview:</strong>
+        <div id="color-preview" style="width:50px; height:50px; background-color: rgb(128,128,128); border: 1px solid #000; display: inline-block; margin-left: 10px;"></div>
+    </div>
+
+    <button onclick="submitPixel()">Submit</button>
+</div>
+
+<script>
+    function pixelClicked(td) {
+        const signature = document.getElementById('signature').value.trim();
+        if (!signature) {
+            document.getElementById('signature-warning').style.display = 'inline';
+            return;
+        }
+        document.getElementById('signature-warning').style.display = 'none';
+
+        const x = td.getAttribute('data-x');
+        const y = td.getAttribute('data-y');
+
+        document.getElementById('pixel-x').innerText = x;
+        document.getElementById('pixel-y').innerText = y;
+        document.getElementById('color-widget').style.display = 'block';
+        updatePreview();
+    }
+
+    function updatePreview() {
+        const r = document.getElementById('r-slider').value;
+        const g = document.getElementById('g-slider').value;
+        const b = document.getElementById('b-slider').value;
+        document.getElementById('r-value').innerText = r;
+        document.getElementById('g-value').innerText = g;
+        document.getElementById('b-value').innerText = b;
+        document.getElementById('color-preview').style.backgroundColor = `rgb(${r},${g},${b})`;
+    }
+
+    function submitPixel() {
+        const signature = document.getElementById('signature').value.trim();
+        const x = document.getElementById('pixel-x').innerText;
+        const y = document.getElementById('pixel-y').innerText;
+        const r = document.getElementById('r-slider').value;
+        const g = document.getElementById('g-slider').value;
+        const b = document.getElementById('b-slider').value;
+        const hex = '#' + [r, g, b].map(v => parseInt(v).toString(16).padStart(2, '0')).join('');
+
+        fetch('/update_pixel/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ x, y, color: hex, signature })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the pixel color on the grid visually
+                const td = document.querySelector(`td[data-x="${x}"][data-y="${y}"]`);
+                td.style.backgroundColor = hex;
+                document.getElementById('color-widget').style.display = 'none';
+            }
+        });
+    }
+</script>
+
 {% endblock %}
