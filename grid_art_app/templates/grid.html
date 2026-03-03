@@ -1,54 +1,60 @@
-{% block title %}Grid{% endblock %}
-
 {% block content %}
-
-<!-- Section 1: Signature -->
-<div style="padding: 10px; background-color: #f0f0f0; margin-bottom: 10px;">
-    <label><strong>Signature (username):</strong></label>
-    <input type="text" id="signature" placeholder="Enter your username..." style="margin-left: 10px; padding: 5px;">
-    <span id="signature-warning" style="color: red; margin-left: 10px; display: none;">Please enter a signature before editing!</span>
-</div>
-
-<!-- Section 2: Grid -->
+<!-- Section 1: Grid -->
 <div style="overflow: auto; margin-bottom: 10px;">
-    <table style="border-collapse: collapse; cursor: pointer;">
-        {% for row in grid %}
-        <tr>
-            {% for pixel in row %}
-            <td style="width:4px; height:4px; background-color:{{ pixel.color }}; border: 1px solid #ccc;"
-                data-x="{{ pixel.x }}" data-y="{{ pixel.y }}"
-                onclick="pixelClicked(this)">
-            </td>
+    <div id="grid-container" style="transform-origin: top left; transition: transform 0.1s;">
+        <table style="border-collapse: collapse; cursor: pointer;">
+            {% for row in grid %}
+            <tr>
+                {% for pixel in row %}
+                <td style="width:4px; height:4px; background-color:{{ pixel.color }}; border: 1px solid #ccc;"
+                    data-x="{{ pixel.x }}" data-y="{{ pixel.y }}"
+                    onclick="pixelClicked(this)">
+                </td>
+                {% endfor %}
+            </tr>
             {% endfor %}
-        </tr>
-        {% endfor %}
-    </table>
+        </table>
+    </div>
 </div>
 
 <!-- Section 3: Color Widget -->
-<div id="color-widget" style="padding: 10px; background-color: #f0f0f0; display: none;">
-    <h3>Edit Pixel</h3>
-    <p>Selected Pixel — X: <strong id="pixel-x">-</strong>, Y: <strong id="pixel-y">-</strong></p>
-
-    <div style="margin-bottom: 8px;">
-        <label>R: <span id="r-value">128</span></label><br>
-        <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updatePreview()">
-    </div>
-    <div style="margin-bottom: 8px;">
-        <label>G: <span id="g-value">128</span></label><br>
-        <input type="range" id="g-slider" min="0" max="255" value="128" oninput="updatePreview()">
-    </div>
-    <div style="margin-bottom: 8px;">
-        <label>B: <span id="b-value">128</span></label><br>
-        <input type="range" id="b-slider" min="0" max="255" value="128" oninput="updatePreview()">
+<div id="color-widget" style="padding: 8px; background-color: #f0f0f0; display: none; display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: wrap;">
+    
+    <div>
+        <strong>Pixel:</strong> X: <span id="pixel-x">-</span>, Y: <span id="pixel-y">-</span>
     </div>
 
-    <div style="margin-bottom: 8px;">
+    <div>
+        <label>Signature:</label>
+        <input type="text" id="signature" placeholder="Username..." style="width: 80px; padding: 3px;">
+        <span id="signature-warning" style="color: red; display: none;">Required!</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <label>R:</label>
+        <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updatePreview()" style="width: 80px;">
+        <span id="r-value">128</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <label>G:</label>
+        <input type="range" id="g-slider" min="0" max="255" value="128" oninput="updatePreview()" style="width: 80px;">
+        <span id="g-value">128</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <label>B:</label>
+        <input type="range" id="b-slider" min="0" max="255" value="128" oninput="updatePreview()" style="width: 80px;">
+        <span id="b-value">128</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 5px;">
         <strong>Preview:</strong>
-        <div id="color-preview" style="width:50px; height:50px; background-color: rgb(128,128,128); border: 1px solid #000; display: inline-block; margin-left: 10px;"></div>
+        <div id="color-preview" style="width: 30px; height: 30px; background-color: rgb(128,128,128); border: 1px solid #000;"></div>
     </div>
 
     <button onclick="submitPixel()">Submit</button>
+
 </div>
 
 <script>
@@ -65,7 +71,7 @@
 
         document.getElementById('pixel-x').innerText = x;
         document.getElementById('pixel-y').innerText = y;
-        document.getElementById('color-widget').style.display = 'block';
+        document.getElementById('color-widget').style.display = 'flex';
         updatePreview();
     }
 
@@ -106,6 +112,39 @@
             }
         });
     }
-</script>
+    // zoom in grid
+    let currentZoom = 100;
 
+    function applyZoom(e) {
+        const container = document.getElementById('grid-container');
+        const wrapper = container.parentElement;
+
+        // Get mouse position relative to the wrapper
+        const rect = wrapper.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left + wrapper.scrollLeft;
+        const mouseY = e.clientY - rect.top + wrapper.scrollTop;
+
+        // Calculate new zoom
+        const prevZoom = currentZoom;
+        if (e.deltaY < 0) {
+            currentZoom = Math.min(currentZoom + 10, 400);
+        } else {
+            currentZoom = Math.max(currentZoom - 10, 100); // 100 is the minimum so it cant zoom out past default
+        }
+
+        const scale = currentZoom / 100;
+        container.style.transform = `scale(${scale})`;
+        container.style.transformOrigin = `${mouseX}px ${mouseY}px`;
+
+        // Adjust scroll position to follow mouse
+        const zoomRatio = currentZoom / prevZoom;
+        wrapper.scrollLeft = mouseX * zoomRatio - (e.clientX - rect.left);
+        wrapper.scrollTop = mouseY * zoomRatio - (e.clientY - rect.top);
+    }
+
+    document.getElementById('grid-container').addEventListener('wheel', function(e) {
+        e.preventDefault();
+        applyZoom(e);
+    }, { passive: false });
+</script>
 {% endblock %}
