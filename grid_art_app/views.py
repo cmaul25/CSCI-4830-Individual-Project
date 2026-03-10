@@ -5,24 +5,18 @@ from .models import Pixel
 from django.contrib.auth.models import User
 import json
 
-def home(request):
-    return render(request, 'home.html')
-
 def grid(request):
-    width = 150
-    height = 100
-    changed_pixels = Pixel.objects.all()
-    pixel_dict = {(p.x, p.y): p.color for p in changed_pixels}
-    pixel_info = {(p.x, p.y): {'changed_by': p.changed_by, 'timestamp': p.timestamp.strftime('%Y-%m-%d %H:%M:%S') if p.timestamp else '-'} for p in changed_pixels}
-    grid = []
-    for y in range(height):
-        row = []
-        for x in range(width):
-            color = pixel_dict.get((x, y), '#FFFFFF')
-            info = pixel_info.get((x, y), {'changed_by': 'Unchanged', 'timestamp': '-'})
-            row.append({'x': x, 'y': y, 'color': color, 'changed_by': info['changed_by'], 'timestamp': info['timestamp']})
-        grid.append(row)
-    return render(request, 'grid.html', {'grid': grid})
+    changed_pixels = Pixel.objects.all().values('x', 'y', 'color', 'changed_by', 'timestamp')
+    pixel_data = []
+    for p in changed_pixels:
+        pixel_data.append({
+            'x': p['x'],
+            'y': p['y'],
+            'color': p['color'],
+            'changed_by': p['changed_by'] or 'Unknown',
+            'timestamp': p['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if p['timestamp'] else '-'
+        })
+    return render(request, 'grid.html', {'pixel_data': pixel_data})
 
 @csrf_exempt
 def update_pixel(request):

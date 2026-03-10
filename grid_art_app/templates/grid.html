@@ -76,13 +76,6 @@
 
 <script>
     function pixelClicked(td) {
-        const signature = document.getElementById('signature').value.trim();
-        if (!signature) {
-            document.getElementById('signature-warning').style.display = 'inline';
-            return;
-        }
-        document.getElementById('signature-warning').style.display = 'none';
-
         const x = td.getAttribute('data-x');
         const y = td.getAttribute('data-y');
         const changedBy = td.getAttribute('data-changed-by') || 'Never changed';
@@ -108,6 +101,11 @@
 
     function submitPixel() {
         const signature = document.getElementById('signature').value.trim();
+        if (!signature) {
+            document.getElementById('signature-warning').style.display = 'inline';
+            return;
+        }
+        document.getElementById('signature-warning').style.display = 'none';
         const x = document.getElementById('pixel-x').innerText;
         const y = document.getElementById('pixel-y').innerText;
         const r = document.getElementById('r-slider').value;
@@ -129,6 +127,8 @@
                 // Update the pixel color on the grid visually
                 const td = document.querySelector(`td[data-x="${x}"][data-y="${y}"]`);
                 td.style.backgroundColor = hex;
+                td.setAttribute('data-changed-by', signature);
+                td.setAttribute('data-timestamp', new Date().toLocaleString());
                 document.getElementById('color-widget').style.display = 'none';
             }
         });
