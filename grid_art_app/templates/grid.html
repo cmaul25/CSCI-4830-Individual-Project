@@ -1,43 +1,31 @@
-{% block content %}
-<!-- Section 1: Grid -->
-<div style="display: flex; justify-content: center; margin-bottom: 10px; overflow: auto;">    <div id="grid-container" style="transform-origin: top left; transition: transform 0.1s;">
-        <table style="border-collapse: collapse; cursor: pointer;">
-            {% for row in grid %}
-            <tr>
-                {% for pixel in row %}
-                <td style="width:8px; height:8px; background-color:{{ pixel.color }}; border: 1px solid #ccc; box-sizing: border-box; padding: 0;"
-                    data-x="{{ pixel.x }}" data-y="{{ pixel.y }}"
-                    data-changed-by="{{ pixel.changed_by }}"
-                    data-timestamp="{{ pixel.timestamp }}"
-                    onclick="pixelClicked(this)">
-                </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
+{% block title %}Grid{% endblock %}
 
-<!-- Section 2: Signature -->
-<div>
-    <label>Signature:</label>
-    <input type="text" id="signature" placeholder="Username..." style="width: 80px; padding: 3px;">
-    <span id="signature-warning" style="color: red; display: none;">Required!</span>
+{% block content %}
+
+<!-- Section 2: Grid -->
+<div style="display: flex; justify-content: center; margin-bottom: 10px; overflow: auto;">
+    <canvas id="grid-canvas" style="border: 1px solid #ccc; cursor: crosshair;"></canvas>
 </div>
 
 <!-- Section 3: Color Widget -->
-<div id="color-widget" style="padding: 8px; background-color: #f0f0f0; display: none; display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: wrap;">
-    
+<div id="color-widget" style="padding: 8px; background-color: #f0f0f0; display: none; flex-direction: row; align-items: center; gap: 15px; flex-wrap: wrap;">
+
     <div>
         <strong>Pixel:</strong> X: <span id="pixel-x">-</span>, Y: <span id="pixel-y">-</span>
     </div>
-    
+
     <div>
         <strong>Last changed by:</strong> <span id="last-changed-by">-</span> <strong>at</strong> <span id="last-changed-time">-</span>
     </div>
 
     <div style="width: 100%; height: 0;"></div>
-    
+
+    <div>
+        <label>Signature:</label>
+        <input type="text" id="signature" placeholder="Username..." style="width: 80px; padding: 3px;">
+        <span id="signature-warning" style="color: red; display: none;">Required!</span>
+    </div>
+
     <div style="display: flex; align-items: center; gap: 5px;">
         <label>R:</label>
         <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updatePreview()" style="width: 80px;">
@@ -75,19 +63,57 @@
 </div>
 
 <script>
-    function pixelClicked(td) {
-        const x = td.getAttribute('data-x');
-        const y = td.getAttribute('data-y');
-        const changedBy = td.getAttribute('data-changed-by') || 'Never changed';
-        const timestamp = td.getAttribute('data-timestamp') || '-';
+    const PIXEL_SIZE = 8;
+    const WIDTH = 150;
+    const HEIGHT = 100;
+
+    // Build pixel map from Django data
+    const pixelData = {{ pixel_data|safe }};
+    const pixelMap = {};
+    pixelData.forEach(p => {
+        pixelMap[`${p.x},${p.y}`] = p;
+    });
+
+    // Set up canvas
+    const canvas = document.getElementById('grid-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = WIDTH * PIXEL_SIZE;
+    canvas.height = HEIGHT * PIXEL_SIZE;
+
+    // Draw the full grid
+    function drawGrid() {
+        for (let y = 0; y < HEIGHT; y++) {
+            for (let x = 0; x < WIDTH; x++) {
+                const key = `${x},${y}`;
+                const color = pixelMap[key] ? pixelMap[key].color : '#FFFFFF';
+                ctx.fillStyle = color;
+                ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                ctx.strokeStyle = '#ccc';
+                ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            }
+        }
+    }
+
+    drawGrid();
+
+    // Handle canvas click
+    canvas.addEventListener('click', function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / PIXEL_SIZE);
+        const y = Math.floor((e.clientY - rect.top) / PIXEL_SIZE);
+
+        if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+
+        const key = `${x},${y}`;
+        const info = pixelMap[key];
 
         document.getElementById('pixel-x').innerText = x;
         document.getElementById('pixel-y').innerText = y;
-        document.getElementById('last-changed-by').innerText = changedBy;
-        document.getElementById('last-changed-time').innerText = timestamp;
+        document.getElementById('last-changed-by').innerText = info ? info.changed_by : 'Never changed';
+        document.getElementById('last-changed-time').innerText = info ? info.timestamp : '-';
         document.getElementById('color-widget').style.display = 'flex';
         updatePreview();
-    }
+    });
 
     function updatePreview() {
         const r = document.getElementById('r-slider').value;
@@ -106,8 +132,9 @@
             return;
         }
         document.getElementById('signature-warning').style.display = 'none';
-        const x = document.getElementById('pixel-x').innerText;
-        const y = document.getElementById('pixel-y').innerText;
+
+        const x = parseInt(document.getElementById('pixel-x').innerText);
+        const y = parseInt(document.getElementById('pixel-y').innerText);
         const r = document.getElementById('r-slider').value;
         const g = document.getElementById('g-slider').value;
         const b = document.getElementById('b-slider').value;
@@ -124,47 +151,56 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update the pixel color on the grid visually
-                const td = document.querySelector(`td[data-x="${x}"][data-y="${y}"]`);
-                td.style.backgroundColor = hex;
-                td.setAttribute('data-changed-by', signature);
-                td.setAttribute('data-timestamp', new Date().toLocaleString());
+                // Update pixel map
+                const key = `${x},${y}`;
+                pixelMap[key] = { x, y, color: hex, changed_by: signature, timestamp: new Date().toLocaleString() };
+
+                // Redraw just the updated pixel
+                ctx.fillStyle = hex;
+                ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                ctx.strokeStyle = '#ccc';
+                ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+
                 document.getElementById('color-widget').style.display = 'none';
             }
         });
     }
-    //Search feature functions
+
+    // Search functions
+    let highlightedPixels = [];
+
     function searchSignature() {
-    clearSearch();
-    const query = document.getElementById('search-signature').value.trim().toLowerCase();
-    if (!query) return;
+        clearSearch();
+        const query = document.getElementById('search-signature').value.trim().toLowerCase();
+        if (!query) return;
 
-    const cells = document.querySelectorAll('td[data-changed-by]');
-    let count = 0;
+        let count = 0;
+        Object.values(pixelMap).forEach(p => {
+            if (p.changed_by && p.changed_by.toLowerCase() === query) {
+                highlightedPixels.push({ x: p.x, y: p.y });
+                ctx.strokeStyle = 'yellow';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(p.x * PIXEL_SIZE + 1, p.y * PIXEL_SIZE + 1, PIXEL_SIZE - 2, PIXEL_SIZE - 2);
+                count++;
+            }
+        });
 
-    cells.forEach(cell => {
-        const changedBy = cell.getAttribute('data-changed-by').toLowerCase();
-        if (changedBy === query) {
-            cell.style.outline = '2px solid yellow';
-            cell.style.boxShadow = '0 0 4px 2px rgba(255, 255, 0, 0.8)';
-            count++;
-        }
-    });
-
-    document.getElementById('search-result').innerText = count > 0 ? `${count} pixels found` : 'No pixels found';
+        document.getElementById('search-result').innerText = count > 0 ? `${count} pixels found` : 'No pixels found';
     }
 
     function clearSearch() {
-        const cells = document.querySelectorAll('td[data-changed-by]');
-        cells.forEach(cell => {
-            cell.style.outline = '';
-            cell.style.boxShadow = '';
+        highlightedPixels.forEach(p => {
+            const key = `${p.x},${p.y}`;
+            const color = pixelMap[key] ? pixelMap[key].color : '#FFFFFF';
+            ctx.fillStyle = color;
+            ctx.fillRect(p.x * PIXEL_SIZE, p.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(p.x * PIXEL_SIZE, p.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
         });
+        highlightedPixels = [];
         document.getElementById('search-result').innerText = '';
     }
-    document.getElementById('grid-container').addEventListener('wheel', function(e) {
-        e.preventDefault();
-        applyZoom(e);
-    }, { passive: false });
 </script>
+
 {% endblock %}
