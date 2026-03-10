@@ -8,6 +8,8 @@
                 {% for pixel in row %}
                 <td style="width:4px; height:4px; background-color:{{ pixel.color }}; border: 1px solid #ccc;"
                     data-x="{{ pixel.x }}" data-y="{{ pixel.y }}"
+                    data-changed-by="{{ pixel.changed_by }}"
+                    data-timestamp="{{ pixel.timestamp }}"
                     onclick="pixelClicked(this)">
                 </td>
                 {% endfor %}
@@ -17,19 +19,26 @@
     </div>
 </div>
 
+<!-- Section 2: Signature -->
+<div>
+    <label>Signature:</label>
+    <input type="text" id="signature" placeholder="Username..." style="width: 80px; padding: 3px;">
+    <span id="signature-warning" style="color: red; display: none;">Required!</span>
+</div>
+
 <!-- Section 3: Color Widget -->
 <div id="color-widget" style="padding: 8px; background-color: #f0f0f0; display: none; display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: wrap;">
     
     <div>
         <strong>Pixel:</strong> X: <span id="pixel-x">-</span>, Y: <span id="pixel-y">-</span>
     </div>
-
+    
     <div>
-        <label>Signature:</label>
-        <input type="text" id="signature" placeholder="Username..." style="width: 80px; padding: 3px;">
-        <span id="signature-warning" style="color: red; display: none;">Required!</span>
+        <strong>Last changed by:</strong> <span id="last-changed-by">-</span> <strong>at</strong> <span id="last-changed-time">-</span>
     </div>
 
+    <div style="width: 100%; height: 0;"></div>
+    
     <div style="display: flex; align-items: center; gap: 5px;">
         <label>R:</label>
         <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updatePreview()" style="width: 80px;">
@@ -68,9 +77,13 @@
 
         const x = td.getAttribute('data-x');
         const y = td.getAttribute('data-y');
+        const changedBy = td.getAttribute('data-changed-by') || 'Never changed';
+        const timestamp = td.getAttribute('data-timestamp') || '-';
 
         document.getElementById('pixel-x').innerText = x;
         document.getElementById('pixel-y').innerText = y;
+        document.getElementById('last-changed-by').innerText = changedBy;
+        document.getElementById('last-changed-time').innerText = timestamp;
         document.getElementById('color-widget').style.display = 'flex';
         updatePreview();
     }

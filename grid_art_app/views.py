@@ -13,12 +13,14 @@ def grid(request):
     height = 200
     changed_pixels = Pixel.objects.all()
     pixel_dict = {(p.x, p.y): p.color for p in changed_pixels}
+    pixel_info = {(p.x, p.y): {'changed_by': p.changed_by, 'timestamp': p.timestamp.strftime('%Y-%m-%d %H:%M:%S') if p.timestamp else '-'} for p in changed_pixels}
     grid = []
     for y in range(height):
         row = []
         for x in range(width):
             color = pixel_dict.get((x, y), '#FFFFFF')
-            row.append({'x': x, 'y': y, 'color': color})
+            info = pixel_info.get((x, y), {'changed_by': 'Unchanged', 'timestamp': '-'})
+            row.append({'x': x, 'y': y, 'color': color, 'changed_by': info['changed_by'], 'timestamp': info['timestamp']})
         grid.append(row)
     return render(request, 'grid.html', {'grid': grid})
 
