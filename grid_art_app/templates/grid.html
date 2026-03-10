@@ -65,6 +65,15 @@
 
 </div>
 
+<!-- Section 4: Signature Search -->
+<div style="padding: 8px; background-color: #e8e8e8; display: flex; align-items: center; gap: 10px;">
+    <strong>Search Signature:</strong>
+    <input type="text" id="search-signature" placeholder="Enter username..." style="padding: 3px; width: 120px;">
+    <button onclick="searchSignature()">Search</button>
+    <button onclick="clearSearch()">Clear</button>
+    <span id="search-result" style="color: gray;"></span>
+</div>
+
 <script>
     function pixelClicked(td) {
         const signature = document.getElementById('signature').value.trim();
@@ -124,7 +133,35 @@
             }
         });
     }
+    //Search feature functions
+    function searchSignature() {
+    clearSearch();
+    const query = document.getElementById('search-signature').value.trim().toLowerCase();
+    if (!query) return;
 
+    const cells = document.querySelectorAll('td[data-changed-by]');
+    let count = 0;
+
+    cells.forEach(cell => {
+        const changedBy = cell.getAttribute('data-changed-by').toLowerCase();
+        if (changedBy === query) {
+            cell.style.outline = '2px solid yellow';
+            cell.style.boxShadow = '0 0 4px 2px rgba(255, 255, 0, 0.8)';
+            count++;
+        }
+    });
+
+    document.getElementById('search-result').innerText = count > 0 ? `${count} pixels found` : 'No pixels found';
+    }
+
+    function clearSearch() {
+        const cells = document.querySelectorAll('td[data-changed-by]');
+        cells.forEach(cell => {
+            cell.style.outline = '';
+            cell.style.boxShadow = '';
+        });
+        document.getElementById('search-result').innerText = '';
+    }
     document.getElementById('grid-container').addEventListener('wheel', function(e) {
         e.preventDefault();
         applyZoom(e);
