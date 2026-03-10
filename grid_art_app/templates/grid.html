@@ -1,12 +1,11 @@
 {% block content %}
 <!-- Section 1: Grid -->
-<div style="overflow: auto; margin-bottom: 10px;">
-    <div id="grid-container" style="transform-origin: top left; transition: transform 0.1s;">
+<div style="display: flex; justify-content: center; margin-bottom: 10px; overflow: auto;">    <div id="grid-container" style="transform-origin: top left; transition: transform 0.1s;">
         <table style="border-collapse: collapse; cursor: pointer;">
             {% for row in grid %}
             <tr>
                 {% for pixel in row %}
-                <td style="width:4px; height:4px; background-color:{{ pixel.color }}; border: 1px solid #ccc;"
+                <td style="width:8px; height:8px; background-color:{{ pixel.color }}; border: 1px solid #ccc; box-sizing: border-box; padding: 0;"
                     data-x="{{ pixel.x }}" data-y="{{ pixel.y }}"
                     data-changed-by="{{ pixel.changed_by }}"
                     data-timestamp="{{ pixel.timestamp }}"
@@ -124,35 +123,6 @@
                 document.getElementById('color-widget').style.display = 'none';
             }
         });
-    }
-    // zoom in grid
-    let currentZoom = 100;
-
-    function applyZoom(e) {
-        const container = document.getElementById('grid-container');
-        const wrapper = container.parentElement;
-
-        // Get mouse position relative to the wrapper
-        const rect = wrapper.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left + wrapper.scrollLeft;
-        const mouseY = e.clientY - rect.top + wrapper.scrollTop;
-
-        // Calculate new zoom
-        const prevZoom = currentZoom;
-        if (e.deltaY < 0) {
-            currentZoom = Math.min(currentZoom + 10, 400);
-        } else {
-            currentZoom = Math.max(currentZoom - 10, 100); // 100 is the minimum so it cant zoom out past default
-        }
-
-        const scale = currentZoom / 100;
-        container.style.transform = `scale(${scale})`;
-        container.style.transformOrigin = `${mouseX}px ${mouseY}px`;
-
-        // Adjust scroll position to follow mouse
-        const zoomRatio = currentZoom / prevZoom;
-        wrapper.scrollLeft = mouseX * zoomRatio - (e.clientX - rect.left);
-        wrapper.scrollTop = mouseY * zoomRatio - (e.clientY - rect.top);
     }
 
     document.getElementById('grid-container').addEventListener('wheel', function(e) {

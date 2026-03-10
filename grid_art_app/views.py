@@ -9,8 +9,8 @@ def home(request):
     return render(request, 'home.html')
 
 def grid(request):
-    width = 250
-    height = 200
+    width = 150
+    height = 100
     changed_pixels = Pixel.objects.all()
     pixel_dict = {(p.x, p.y): p.color for p in changed_pixels}
     pixel_info = {(p.x, p.y): {'changed_by': p.changed_by, 'timestamp': p.timestamp.strftime('%Y-%m-%d %H:%M:%S') if p.timestamp else '-'} for p in changed_pixels}
