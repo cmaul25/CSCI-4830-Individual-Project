@@ -42,6 +42,32 @@ def grid(request):
         'oldest_pixels': oldest_pixels,
         })
 
+def get_leaderboard(request):
+    most_pixels = list(Pixel.objects
+        .values('changed_by')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10])
+
+    most_colors = list(Pixel.objects
+        .values('changed_by')
+        .annotate(count=Count('color', distinct=True))
+        .order_by('-count')[:10])
+
+    oldest_pixels = list(Pixel.objects
+        .values('changed_by')
+        .annotate(oldest=Min('timestamp'))
+        .order_by('oldest')[:10])
+
+    # Convert timestamps to strings so they are JSON serializable
+    for entry in oldest_pixels:
+        entry['oldest'] = entry['oldest'].strftime('%m/%d/%Y') if entry['oldest'] else '-'
+
+    return JsonResponse({
+        'most_pixels': most_pixels,
+        'most_colors': most_colors,
+        'oldest_pixels': oldest_pixels,
+    })
+
 @csrf_exempt
 def update_pixel(request):
     if request.method == 'POST':

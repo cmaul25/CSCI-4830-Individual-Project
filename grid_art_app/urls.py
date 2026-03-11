@@ -4,4 +4,5 @@ from . import views
 urlpatterns = [
     path('', views.grid, name='grid'),
     path('update_pixel/', views.update_pixel, name='update_pixel'),
+    path('get_leaderboard/', views.get_leaderboard, name='get_leaderboard'),
 ]

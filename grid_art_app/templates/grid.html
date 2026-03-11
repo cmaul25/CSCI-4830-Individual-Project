@@ -250,6 +250,7 @@
                 ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
 
                 selectedPixel = null;
+                refreshLeaderboard();
                 document.getElementById('color-widget').style.display = 'none';
             }
         });
@@ -332,6 +333,30 @@
                 }
             }
         }
+    }
+    //leaderboard functions
+    function refreshLeaderboard() {
+        fetch('/get_leaderboard/')
+            .then(response => response.json())
+            .then(data => {
+                updateLeaderboardSection('leaderboard-most_pixels', data.most_pixels, 'count');
+                updateLeaderboardSection('leaderboard-most_colors', data.most_colors, 'count');
+                updateLeaderboardSection('leaderboard-oldest_pixels', data.oldest_pixels, 'oldest');
+            });
+    }
+
+    function updateLeaderboardSection(elementId, entries, valueKey) {
+        const container = document.getElementById(elementId);
+        if (entries.length === 0) {
+            container.innerHTML = '<div style="color: gray; font-size: 13px;">No data yet</div>';
+            return;
+        }
+        container.innerHTML = entries.map((entry, index) => `
+            <div style="padding: 4px; border-bottom: 1px solid #ddd; font-size: 13px;">
+                <strong>${index + 1}.</strong> ${entry.changed_by}
+                <span style="float: right; color: gray;">${entry[valueKey]}</span>
+            </div>
+        `).join('');
     }
 
     //Submit on Enter
