@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Pixel
 from django.contrib.auth.models import User
 import json
+from django.db.models import Count, Min
 
 def grid(request):
     changed_pixels = Pixel.objects.all().values('x', 'y', 'color', 'changed_by', 'timestamp')
@@ -16,7 +17,30 @@ def grid(request):
             'changed_by': p['changed_by'] or 'Unknown',
             'timestamp': p['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if p['timestamp'] else '-'
         })
-    return render(request, 'grid.html', {'pixel_data': pixel_data})
+        # Most pixels
+    most_pixels = (Pixel.objects
+        .values('changed_by')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10])
+
+    # Most colors used
+    most_colors = (Pixel.objects
+        .values('changed_by')
+        .annotate(count=Count('color', distinct=True))
+        .order_by('-count')[:10])
+
+    # Oldest pixel (user whose oldest pixel is the oldest)
+    oldest_pixels = (Pixel.objects
+        .values('changed_by')
+        .annotate(oldest=Min('timestamp'))
+        .order_by('oldest')[:10])
+
+    return render(request, 'grid.html', {
+        'pixel_data': pixel_data,
+        'most_pixels': most_pixels,
+        'most_colors': most_colors,
+        'oldest_pixels': oldest_pixels,
+        })
 
 @csrf_exempt
 def update_pixel(request):
