@@ -69,10 +69,6 @@
             </div>
 
             <div>
-                 <strong>Current Color:</strong> <span id="current-color">-</span>
-            </div>
-
-            <div>
                 <strong>Current Color:</strong> <span id="current-color">-</span>
                 <button onclick="copyColorToSliders()">Copy</button>
             </div>
@@ -144,23 +140,10 @@
     canvas.width = WIDTH * PIXEL_SIZE;
     canvas.height = HEIGHT * PIXEL_SIZE;
 
-    function drawGrid() {
-        for (let y = 0; y < HEIGHT; y++) {
-            for (let x = 0; x < WIDTH; x++) {
-                const key = `${x},${y}`;
-                const color = pixelMap[key] ? pixelMap[key].color : '#FFFFFF';
-                ctx.fillStyle = color;
-                ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-                ctx.strokeStyle = '#ccc';
-                ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-            }
-        }
-    }
-
-    drawGrid();
-
     let selectedPixel = null;
     let showGridLines = true;
+
+    redrawGrid();
 
     canvas.addEventListener('click', function(e) {
         const rect = canvas.getBoundingClientRect();
@@ -175,17 +158,21 @@
             const prevColor = pixelMap[prevKey] ? pixelMap[prevKey].color : '#FFFFFF';
             ctx.fillStyle = prevColor;
             ctx.fillRect(selectedPixel.x * PIXEL_SIZE, selectedPixel.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-            ctx.strokeStyle = '#ccc';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(selectedPixel.x * PIXEL_SIZE, selectedPixel.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            if (showGridLines) {
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(selectedPixel.x * PIXEL_SIZE, selectedPixel.y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            }
         }
 
         // Highlight new selected pixel in red
         ctx.fillStyle = 'red';
         ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-        ctx.strokeStyle = '#ccc';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+        if (showGridLines) {
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+        }
 
         selectedPixel = { x, y };
 
@@ -246,8 +233,11 @@
 
                 ctx.fillStyle = hex;
                 ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-                ctx.strokeStyle = '#ccc';
-                ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                if (showGridLines) {
+                    ctx.strokeStyle = '#ccc';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                }
 
                 selectedPixel = null;
                 refreshLeaderboard();
